@@ -9,9 +9,11 @@
     "dev": "nodemon src/index.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "postgres": "^3.3.5"
   },
   "devDependencies": {
+    "dotenv": "^16.1.4",
     "morgan": "^1.10.0",
     "nodemon": "^2.0.22"
   }
