@@ -55,6 +55,8 @@ router.post(
 
     delete newUser[0].password;
 
+    req.session.user = user;
+
     return res.status(201).json({
       message: "User created successfully",
       user: newUser[0],
@@ -98,6 +100,8 @@ router.post(
     }
 
     delete user.password;
+
+    req.session.user = user;
 
     return res.status(200).json({
       message: "User logged in successfully",
