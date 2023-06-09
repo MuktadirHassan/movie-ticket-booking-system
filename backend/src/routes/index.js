@@ -110,4 +110,317 @@ router.post(
   })
 );
 
+router.post(
+  "/movies/create",
+  catchAsync(async (req, res) => {
+    const schema = z
+      .object({
+        movie_name: z.string(),
+        description: z.string(),
+        release_date: z.string(),
+        duration: z.number(),
+      })
+      .required();
+
+    const movieData = schema.parse(req.body);
+    const { movie_name, description, release_date, duration } = movieData;
+
+    const newMovie = await sql`
+    INSERT INTO movies (
+      movie_name, description, release_date, duration
+    ) VALUES (
+      ${movie_name}, ${description}, ${release_date}, ${duration}
+    ) RETURNING *`;
+
+    return res.status(201).json({
+      message: "Movie created successfully",
+      movie: newMovie[0],
+    });
+  })
+);
+
+router.get(
+  "/movies",
+  catchAsync(async (req, res) => {
+    const movies = await sql`
+    SELECT * FROM movies`;
+
+    return res.status(200).json({
+      message: "Movies fetched successfully",
+      movies,
+    });
+  })
+);
+
+router.patch(
+  "/movies/:movieId",
+  catchAsync(async (req, res) => {
+    const schema = z
+      .object({
+        movie_name: z.string(),
+        description: z.string(),
+        release_date: z.string(),
+        duration: z.number(),
+      })
+      .partial()
+      .required();
+
+    const movieData = schema.parse(req.body);
+    const { movie_name, description, release_date, duration } = movieData;
+    const { movieId } = req.params;
+
+    const updatedMovie = await sql`
+    UPDATE movies SET
+      movie_name = ${movie_name},
+      description = ${description},
+      release_date = ${release_date},
+      duration = ${duration}
+    WHERE movie_id = ${movieId}
+    RETURNING *`;
+
+    return res.status(200).json({
+      message: "Movie updated successfully",
+      movie: updatedMovie[0],
+    });
+  })
+);
+
+router.delete(
+  "/movies/:movieId",
+  catchAsync(async (req, res) => {
+    const { movieId } = req.params;
+
+    const deletedMovie = await sql`
+    DELETE FROM movies
+    WHERE movie_id = ${movieId}
+    RETURNING *`;
+
+    return res.status(200).json({
+      message: "Movie deleted successfully",
+      movie: deletedMovie[0],
+    });
+  })
+);
+
+router.post(
+  "/halls/create",
+  catchAsync(async (req, res) => {
+    const schema = z
+      .object({
+        hall_name: z.string(),
+      })
+      .required();
+
+    const hallData = schema.parse(req.body);
+
+    const { hall_name } = hallData;
+
+    const newHall = await sql`
+    INSERT INTO halls (
+      hall_name
+    ) VALUES (
+      ${hall_name}
+    ) RETURNING *`;
+
+    return res.status(201).json({
+      message: "Hall created successfully",
+      hall: newHall[0],
+    });
+  })
+);
+
+router.get(
+  "/halls",
+  catchAsync(async (req, res) => {
+    const halls = await sql`
+    SELECT * FROM halls`;
+
+    return res.status(200).json({
+      message: "Halls fetched successfully",
+      halls,
+    });
+  })
+);
+
+router.delete(
+  "/halls/:hallId",
+  catchAsync(async (req, res) => {
+    const { hallId } = req.params;
+
+    const deletedHall = await sql`
+    DELETE FROM halls
+    WHERE hall_id = ${hallId}
+    RETURNING *`;
+
+    return res.status(200).json({
+      message: "Hall deleted successfully",
+      hall: deletedHall[0],
+    });
+  })
+);
+
+router.post(
+  "/shows/create",
+  catchAsync(async (req, res) => {
+    const schema = z
+      .object({
+        movie_id: z.number(),
+        hall_id: z.number(),
+        show_time: z.string(),
+        show_date: z.string(),
+      })
+      .required();
+
+    const showData = schema.parse(req.body);
+
+    const { movie_id, hall_id, show_time, show_date } = showData;
+
+    const newShow = await sql`
+    INSERT INTO shows (
+      movie_id, hall_id, show_time, show_date
+    ) VALUES (
+      ${movie_id}, ${hall_id}, ${show_time}, ${show_date} 
+    ) RETURNING *`;
+
+    return res.status(201).json({
+      message: "Show created successfully",
+      show: newShow[0],
+    });
+  })
+);
+
+router.get(
+  "/shows",
+  catchAsync(async (req, res) => {
+    const shows = await sql`
+    SELECT * FROM shows`;
+
+    return res.status(200).json({
+      message: "Shows fetched successfully",
+      shows,
+    });
+  })
+);
+
+router.post(
+  "/bookings/create",
+  catchAsync(async (req, res) => {
+    const schema = z
+      .object({
+        show_id: z.number(),
+        user_id: z.number(),
+        booking_date: z.string(),
+        amount_paid: z.number(),
+        seat_ids: z.array(z.number()),
+      })
+      .required();
+
+    const bookingData = schema.parse(req.body);
+
+    const { show_id, user_id, booking_date, amount_paid } = bookingData;
+
+    const newBooking = await sql`
+    INSERT INTO bookings (
+      show_id, user_id, booking_date, amount_paid
+    ) VALUES (
+      ${show_id}, ${user_id}, ${booking_date}, ${amount_paid}
+    ) RETURNING *`;
+
+    const booked_seats = await Promise.all(
+      bookingData.seat_ids.map(async (seat_id) => {
+        const newBookedSeat = await sql`
+        INSERT INTO booked_seats (
+          booking_id, seat_id
+        ) VALUES (
+          ${newBooking[0].booking_id}, ${seat_id}
+        ) RETURNING *`;
+
+        return newBookedSeat[0];
+      })
+    );
+
+    return res.status(201).json({
+      message: "Booking created successfully",
+      booking: newBooking[0],
+      booked_seats,
+    });
+  })
+);
+
+router.get(
+  "/bookings",
+  catchAsync(async (req, res) => {
+    const bookings = await sql`
+    SELECT * FROM bookings`;
+
+    return res.status(200).json({
+      message: "Bookings fetched successfully",
+      bookings,
+    });
+  })
+);
+
+router.post(
+  "/seats/create",
+  catchAsync(async (req, res) => {
+    const schema = z
+      .object({
+        hall_id: z.number(),
+        seat_number: z.number(),
+      })
+      .required();
+
+    const seatData = schema.parse(req.body);
+
+    const { hall_id, seat_number } = seatData;
+
+    const newSeat = await sql`
+    INSERT INTO seats (
+      hall_id, seat_number
+    ) VALUES (
+      ${hall_id}, ${seat_number}
+    ) RETURNING *`;
+
+    return res.status(201).json({
+      message: "Seat created successfully",
+      seat: newSeat[0],
+    });
+  })
+);
+
+/**
+ * Available seats for a show
+ */
+router.get(
+  "/shows/:showId/seats",
+  catchAsync(async (req, res) => {
+    const { showId } = req.params;
+
+    const show = await sql`
+    SELECT * FROM shows
+    WHERE show_id = ${showId}`;
+
+    const bookedSeats = await sql`
+    SELECT * FROM booked_seats
+    WHERE booking_id IN (
+      SELECT booking_id FROM bookings
+      WHERE show_id = ${showId}
+    )`;
+
+    const bookedSeatIds = bookedSeats.map((seat) => seat.seat_id);
+
+    const seats = await sql`
+    SELECT * FROM seats
+    WHERE hall_id = ${show[0].hall_id}`;
+
+    const availableSeats = seats.filter(
+      (seat) => !bookedSeatIds.includes(seat.seat_id)
+    );
+
+    return res.status(200).json({
+      message: "Seats fetched successfully",
+      seats: availableSeats,
+    });
+  })
+);
 export default router;

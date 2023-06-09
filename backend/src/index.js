@@ -45,7 +45,10 @@ app.use((req, res, next) => {
 app.use("/", router);
 
 app.use("*", (req, res) => {
-  res.status(404).json("Not Found");
+  res.status(404).json({
+    error: "Endpoint Not Found",
+    path: req.originalUrl,
+  });
 });
 
 app.use((err, req, res, next) => {

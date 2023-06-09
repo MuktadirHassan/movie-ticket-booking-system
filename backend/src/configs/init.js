@@ -28,7 +28,7 @@ import sql from "./database.js";
     CREATE TABLE IF NOT EXISTS movies (
         movie_id SERIAL,
         movie_name varchar(255) NOT NULL,
-        description varchar(255) NOT NULL,
+        description text NOT NULL,
         release_date date NOT NULL,
         duration int NOT NULL,
         PRIMARY KEY (movie_id)
