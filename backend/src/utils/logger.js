@@ -9,6 +9,9 @@ const logger = {
   warn: (message) => {
     console.warns(`[WARNING] [${new Date().toLocaleString()}] ${message}`);
   },
+  http: (message) => {
+    console.log(`[HTTP] [${new Date().toLocaleString()}] ${message}`);
+  },
 };
 
 export default logger;

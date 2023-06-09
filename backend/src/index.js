@@ -1,6 +1,5 @@
 import "dotenv/config.js";
 import express from "express";
-import morgan from "morgan";
 import sql from "./configs/database.js";
 
 import logger from "./utils/logger.js";
@@ -8,7 +7,13 @@ import { PORT } from "./configs/appConfig.js";
 
 const app = express();
 
-app.use(morgan(""));
+/**
+ * Log request Method and URL
+ */
+app.use((req, res, next) => {
+  logger.http(`${req.method} ${req.url}`);
+  next();
+});
 
 app.get("/", (req, res) => {
   res.send("Hello World");
