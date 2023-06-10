@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Suspense } from "react";
 import { SnackbarProvider } from "notistack";
 import { AuthProvider, PrivateRoute } from "./auth/Auth";
+import Movies from "./components/Movies";
 
 const Root = lazy(() => import("./routes/Root"));
 const Login = lazy(() => import("./routes/Login"));
@@ -34,7 +35,11 @@ const router = createBrowserRouter([
     errorElement: <div>404 Not Found</div>,
     children: [
       {
-        path: "/bookings",
+        path: "/",
+        element: <Movies />,
+      },
+      {
+        path: "bookings",
         element: (
           <PrivateRoute>
             <div>Bookings</div>
