@@ -6,7 +6,8 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Suspense } from "react";
 import { SnackbarProvider } from "notistack";
 import { AuthProvider, PrivateRoute } from "./auth/Auth";
-import Movies from "./components/Movies";
+import Movies from "./components/MoviesArea";
+import Movie from "./routes/Movie";
 
 const Root = lazy(() => import("./routes/Root"));
 const Login = lazy(() => import("./routes/Login"));
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Movies />,
+      },
+      {
+        path: "movies/:movieId",
+        element: <Movie />,
       },
       {
         path: "bookings",
