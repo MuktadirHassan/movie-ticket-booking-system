@@ -16,6 +16,7 @@ import {
   successResponseHandler,
   userSignup,
 } from "../services/api";
+import { useAuth } from "../auth/Auth";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -26,6 +27,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   let navigate = useNavigate();
   let location = useLocation();
+  const { updateUser } = useAuth();
 
   const randomFillInput = () => {
     const randomString = Math.random().toString(36).substring(2);
@@ -46,6 +48,7 @@ export default function Register() {
       onSuccess: (data) => {
         successResponseHandler(data);
         navigate(location.state?.from || "/");
+        updateUser(data.user);
       },
       onError: (error) => errorResponseHandler(error),
     }

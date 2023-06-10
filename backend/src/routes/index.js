@@ -87,13 +87,17 @@ router.post(
       ${username}, ${email}, ${hashedPassword}, ${phone_number}
     ) RETURNING *`;
 
-    delete newUser[0].password;
+    const user = {
+      user_id: newUser[0].user_id,
+      username: newUser[0].username,
+      email: newUser[0].email,
+    };
 
-    req.session.user = newUser[0];
+    req.session.user = user;
 
     return res.status(201).json({
       message: "User created successfully",
-      user: newUser[0],
+      user,
     });
   })
 );
@@ -123,9 +127,10 @@ router.post(
       });
     }
 
-    const user = findUser[0];
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      findUser[0].password
+    );
 
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -133,7 +138,11 @@ router.post(
       });
     }
 
-    delete user.password;
+    const user = {
+      user_id: findUser[0].user_id,
+      username: findUser[0].username,
+      email: findUser[0].email,
+    };
 
     req.session.user = user;
 

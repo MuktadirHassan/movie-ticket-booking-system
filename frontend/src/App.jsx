@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Suspense } from "react";
 import { SnackbarProvider } from "notistack";
+import { AuthProvider, PrivateRoute } from "./auth/Auth";
 
 const Root = lazy(() => import("./routes/Root"));
 const Login = lazy(() => import("./routes/Login"));
@@ -31,6 +32,16 @@ const router = createBrowserRouter([
     path: "/",
     element: <Root />,
     errorElement: <div>404 Not Found</div>,
+    children: [
+      {
+        path: "/bookings",
+        element: (
+          <PrivateRoute>
+            <div>Bookings</div>
+          </PrivateRoute>
+        ),
+      },
+    ],
   },
   {
     path: "/login",
@@ -49,7 +60,9 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
           <Suspense fallback={<div></div>}>
-            <RouterProvider router={router} />
+            <AuthProvider>
+              <RouterProvider router={router} />
+            </AuthProvider>
           </Suspense>
         </SnackbarProvider>
       </QueryClientProvider>

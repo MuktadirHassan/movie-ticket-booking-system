@@ -16,12 +16,14 @@ import {
   successResponseHandler,
   userLogin,
 } from "../services/api";
+import { useAuth } from "../auth/Auth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
+  const { updateUser } = useAuth();
   let navigate = useNavigate();
   let location = useLocation();
 
@@ -31,6 +33,7 @@ const Login = () => {
       onSuccess: (data) => {
         successResponseHandler(data);
         navigate(location.state?.from || "/");
+        updateUser(data.user);
       },
       onError: (error) => errorResponseHandler(error),
     }
