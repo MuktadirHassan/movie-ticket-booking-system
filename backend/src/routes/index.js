@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import sql from "../configs/database.js";
 import catchAsync from "../utils/catchAsync.js";
 import { z } from "zod";
+import auth from "../middlewares/auth.js";
 /**
  * Routes for /api
  */
@@ -17,7 +18,7 @@ import { z } from "zod";
 // - [x] View Booked Tickets
 // - [x] Create Seat Layout for a hall
 
-router.get("/", (req, res) => {
+router.get("/", auth, (req, res) => {
   res.json({
     message: "API is working",
   });
