@@ -196,6 +196,31 @@ router.get(
   })
 );
 
+router.get(
+  "/movies/:movieId",
+  catchAsync(async (req, res) => {
+    const { movieId } = req.params;
+
+    const movie = await sql`
+  SELECT * FROM movies WHERE movie_id = ${movieId}`;
+
+    const shows = await sql`
+  SELECT * FROM shows WHERE movie_id = ${movieId}`;
+
+    if (movie.length === 0) {
+      return res.status(404).json({
+        error: "Movie not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Movie fetched successfully",
+      movie: movie[0],
+      shows,
+    });
+  })
+);
+
 router.patch(
   "/movies/:movieId",
   catchAsync(async (req, res) => {
@@ -363,25 +388,29 @@ router.post(
 
     const { show_id, user_id, booking_date, amount_paid } = bookingData;
 
-    const newBooking = await sql`
-    INSERT INTO bookings (
-      show_id, user_id, booking_date, amount_paid
-    ) VALUES (
-      ${show_id}, ${user_id}, ${booking_date}, ${amount_paid}
-    ) RETURNING *`;
+    const [newBooking, booked_seats] = await sql.begin(async (sql) => {
+      const [newBooking] = await sql`
+      INSERT INTO bookings (
+        show_id, user_id, booking_date, amount_paid
+      ) VALUES (
+        ${show_id}, ${user_id}, ${booking_date}, ${amount_paid}
+      ) RETURNING *`;
 
-    const booked_seats = await Promise.all(
-      bookingData.seat_ids.map(async (seat_id) => {
-        const newBookedSeat = await sql`
+      const [booked_seats] = await Promise.all(
+        bookingData.seat_ids.map(async (seat_id) => {
+          const newBookedSeat = await sql`
         INSERT INTO booked_seats (
           booking_id, seat_id
         ) VALUES (
           ${newBooking[0].booking_id}, ${seat_id}
         ) RETURNING *`;
 
-        return newBookedSeat[0];
-      })
-    );
+          return newBookedSeat[0];
+        })
+      );
+
+      return [newBooking, booked_seats];
+    });
 
     return res.status(201).json({
       message: "Booking created successfully",

@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("db_url")
+}
+
+model booked_seats {
+  booked_seat_id Int      @id @default(autoincrement())
+  booking_id     Int
+  seat_id        Int
+  bookings       bookings @relation(fields: [booking_id], references: [booking_id], onDelete: NoAction, onUpdate: NoAction)
+  seats          seats    @relation(fields: [seat_id], references: [seat_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model bookings {
+  booking_id   Int            @id @default(autoincrement())
+  user_id      Int
+  show_id      Int
+  booking_date DateTime       @db.Date
+  amount_paid  Int
+  booked_seats booked_seats[]
+  shows        shows          @relation(fields: [show_id], references: [show_id], onDelete: NoAction, onUpdate: NoAction)
+  users        users          @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model halls {
+  hall_id   Int     @id @default(autoincrement())
+  hall_name String  @db.VarChar(255)
+  seats     seats[]
+  shows     shows[]
+}
+
+model movies {
+  movie_id     Int      @id @default(autoincrement())
+  movie_name   String   @db.VarChar(255)
+  description  String
+  release_date DateTime @db.Date
+  duration     Int
+  shows        shows[]
+}
+
+model seats {
+  seat_id      Int            @id @default(autoincrement())
+  hall_id      Int
+  seat_number  Int
+  booked_seats booked_seats[]
+  halls        halls          @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+}
+
+model shows {
+  show_id   Int        @id @default(autoincrement())
+  hall_id   Int
+  movie_id  Int
+  show_date DateTime   @db.Date
+  show_time DateTime   @db.Time(6)
+  bookings  bookings[]
+  halls     halls      @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
+  movies    movies     @relation(fields: [movie_id], references: [movie_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  user_id      Int        @id @default(autoincrement())
+  username     String     @db.VarChar(255)
+  email        String     @db.VarChar(255)
+  password     String     @db.VarChar(255)
+  phone_number String     @db.VarChar(255)
+  bookings     bookings[]
+}
