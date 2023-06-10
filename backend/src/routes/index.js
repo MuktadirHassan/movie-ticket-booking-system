@@ -17,9 +17,43 @@ import { z } from "zod";
 // - [x] View Booked Tickets
 // - [x] Create Seat Layout for a hall
 
+router.get("/", (req, res) => {
+  res.json({
+    message: "API is working",
+  });
+});
+
+router.get(
+  "/me",
+  catchAsync(async (req, res) => {
+    const { user } = req.session;
+    if (!user) {
+      return res.status(401).json({
+        error: "User not logged in",
+      });
+    }
+
+    return res.status(200).json({
+      message: "User fetched successfully",
+      user,
+    });
+  })
+);
+
+router.post(
+  "/logout",
+  catchAsync(async (req, res) => {
+    req.session.destroy();
+    return res.status(200).json({
+      message: "User logged out successfully",
+    });
+  })
+);
+
 /**
  * Regiser User
  */
+
 router.post(
   "/register",
   catchAsync(async (req, res) => {
@@ -55,7 +89,7 @@ router.post(
 
     delete newUser[0].password;
 
-    req.session.user = user;
+    req.session.user = newUser[0];
 
     return res.status(201).json({
       message: "User created successfully",

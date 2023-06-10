@@ -7,6 +7,7 @@ import logger from "./utils/logger.js";
 import { PORT } from "./configs/appConfig.js";
 import session from "express-session";
 import sessionStore from "connect-pg-simple";
+import cors from "cors";
 
 const app = express();
 
@@ -31,6 +32,13 @@ app.use(
   })
 );
 
+app.use(
+  cors({
+    credentials: true,
+    origin: "http://localhost:5173",
+  })
+);
+
 /**
  * Log request Method and URL
  */
@@ -42,7 +50,7 @@ app.use((req, res, next) => {
 /**
  * Routes for /api
  */
-app.use("/", router);
+app.use("/api", router);
 
 app.use("*", (req, res) => {
   res.status(404).json({
