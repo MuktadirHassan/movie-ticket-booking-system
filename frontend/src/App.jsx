@@ -38,6 +38,7 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Movies />,
+        errorElement: <div>Something went wrong</div>,
       },
       {
         path: "movies/:movieId",
