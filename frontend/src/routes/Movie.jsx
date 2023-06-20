@@ -1,6 +1,16 @@
-import { Container, Paper, Tab, Tabs, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Container,
+  Grid,
+  Paper,
+  Skeleton,
+  Tab,
+  Tabs,
+  Typography,
+} from "@mui/material";
 import { useParams } from "react-router-dom";
-import { getMovie } from "../services/api";
+import { getMovie, getShowSeats } from "../services/api";
 import { useQuery } from "@tanstack/react-query";
 import { FormatDate } from "../utils/formatDate";
 import { useState } from "react";
@@ -10,8 +20,6 @@ export default function Movie() {
   const { data, isError, isLoading } = useQuery(["movie", movieId], () =>
     getMovie(movieId)
   );
-
-  console.log(data);
 
   if (isError && !isLoading) {
     return <div>Something went wrong</div>;
@@ -51,10 +59,43 @@ const MovieDetails = ({ movie }) => {
 };
 
 const MovieShowtimes = ({ shows }) => {
-  const [value, setValue] = useState(0);
+  const [selectedShow, setSelectedShow] = useState(shows[0]);
+  const [seats, setSeats] = useState({
+    seats: [
+      {
+        seat_number: 1,
+        seat_id: 65,
+        available: true,
+      },
+    ],
+  });
+  const [bookedSeats, setBookedSeats] = useState([]);
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
+  const { isLoading } = useQuery(
+    ["show", selectedShow.show_id],
+    () =>
+      getShowSeats({
+        showId: selectedShow.show_id,
+        hallId: selectedShow.hall_id,
+      }),
+    {
+      onSuccess: (data) => {
+        setSeats(data);
+      },
+    }
+  );
+
+  const handleSeatToggle = (seatId) => {
+    if (bookedSeats.includes(seatId)) {
+      setBookedSeats(bookedSeats.filter((seat) => seat !== seatId));
+    } else {
+      setBookedSeats([...bookedSeats, seatId]);
+    }
+  };
+
+  const handleShowChange = (event, newValue) => {
+    setBookedSeats([]); // Reset booked seats
+    setSelectedShow(newValue);
   };
 
   if (!shows) {
@@ -63,15 +104,59 @@ const MovieShowtimes = ({ shows }) => {
 
   return (
     <div>
-      <Tabs value={value} onChange={handleChange} centered>
+      <Tabs value={selectedShow} onChange={handleShowChange} centered>
         {shows.map((show) => {
           return (
-            <Tab key={show.show_id} label={FormatDate(show.show_date)}>
-              {FormatDate(show.show_date)}
-            </Tab>
+            <Tab
+              key={show.show_id}
+              label={FormatDate(show.show_date)}
+              value={show}
+            />
           );
         })}
       </Tabs>
+      {isLoading ? (
+        <Skeleton variant="rectangular" width="100%" height={500} />
+      ) : (
+        <SeatFormation
+          data={seats}
+          handleSeatToggle={handleSeatToggle}
+          bookedSeats={bookedSeats}
+        />
+      )}
     </div>
+  );
+};
+
+const SeatFormation = ({ data, handleSeatToggle, bookedSeats }) => {
+  /**
+   * Seats: [{
+   *  seat_number: 1,
+   *  seat_id: 1,
+   *  available: true | false
+   * }]
+   */
+  const { seats } = data;
+
+  // Grid of 10x10
+  return (
+    <Grid container spacing={1} rowSpacing={2} mt={2} alignContent={"center"}>
+      {seats.map((seat) => {
+        return (
+          <Grid item xs={1} key={seat.seat_id}>
+            <Button
+              fullWidth
+              variant={
+                bookedSeats.includes(seat.seat_id) ? "contained" : "outlined"
+              }
+              disabled={!seat.available}
+              onClick={() => handleSeatToggle(seat.seat_id)}
+            >
+              {seat.seat_number}
+            </Button>
+          </Grid>
+        );
+      })}
+    </Grid>
   );
 };

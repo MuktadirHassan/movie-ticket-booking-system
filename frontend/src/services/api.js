@@ -93,3 +93,9 @@ export const getBookings = async () => {
   const response = await api.get("/bookings");
   return response.data;
 };
+
+export const getShowSeats = async ({ showId, hallId }) => {
+  const url = `/shows/seats?hallId=${hallId}&showId=${showId}`;
+  const response = await api.get(url);
+  return response.data;
+};

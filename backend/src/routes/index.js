@@ -227,7 +227,10 @@ router.get(
   SELECT * FROM movies WHERE movie_id = ${movieId}`;
 
     const shows = await sql`
-  SELECT * FROM shows WHERE movie_id = ${movieId}`;
+      SELECT * FROM shows
+      left join halls on halls.hall_id = shows.hall_id
+      WHERE movie_id = ${movieId}
+  `;
 
     if (movie.length === 0) {
       return res.status(404).json({
@@ -487,13 +490,9 @@ router.post(
  * Available seats for a show
  */
 router.get(
-  "/shows/:showId/seats",
+  "/shows/seats",
   catchAsync(async (req, res) => {
-    const { showId } = req.params;
-
-    const show = await sql`
-    SELECT * FROM shows
-    WHERE show_id = ${showId}`;
+    const { showId, hallId } = req.query;
 
     const bookedSeats = await sql`
     SELECT * FROM booked_seats
@@ -505,17 +504,28 @@ router.get(
     const bookedSeatIds = bookedSeats.map((seat) => seat.seat_id);
 
     const seats = await sql`
-    SELECT * FROM seats
-    WHERE hall_id = ${show[0].hall_id}`;
+    SELECT seat_number, seat_id FROM seats
+    WHERE hall_id = ${hallId}
+    ORDER BY seat_number ASC
+    `;
 
-    const availableSeats = seats.filter(
-      (seat) => !bookedSeatIds.includes(seat.seat_id)
-    );
+    const seatsWithAvailability = seats.map((seat) => {
+      if (bookedSeatIds.includes(seat.seat_id)) {
+        return {
+          ...seat,
+          available: false,
+        };
+      }
+
+      return {
+        ...seat,
+        available: true,
+      };
+    });
 
     return res.status(200).json({
       message: "Seats fetched successfully",
-      availableSeats: availableSeats,
-      seats: seats,
+      seats: seatsWithAvailability,
     });
   })
 );
