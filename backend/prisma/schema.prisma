@@ -46,8 +46,8 @@ model seats {
   seat_id      Int            @id @default(autoincrement())
   hall_id      Int
   seat_number  Int
-  booked_seats booked_seats[]
   halls        halls          @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
+  booked_seats booked_seats[]
 }
 
 model session {

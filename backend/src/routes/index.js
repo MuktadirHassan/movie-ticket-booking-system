@@ -17,6 +17,28 @@ import auth from "../middlewares/auth.js";
 // - [x] Book Tickets for a show
 // - [x] View Booked Tickets
 // - [x] Create Seat Layout for a hall
+router.post("/seats/create/:hallId", async (req, res) => {
+  const { hallId } = req.params;
+
+  // create 50 seats
+  const newSeats = await Promise.all(
+    Array.from({ length: 50 }).map(async (_, index) => {
+      const newSeat = await sql`
+      INSERT INTO seats (
+        hall_id, seat_number
+      ) VALUES (
+        ${hallId}, ${index + 1}
+      ) RETURNING *`;
+
+      return newSeat[0];
+    })
+  );
+
+  return res.status(201).json({
+    message: "Seats created successfully",
+    seats: newSeats,
+  });
+});
 
 router.get("/", auth, (req, res) => {
   res.json({
@@ -492,8 +514,10 @@ router.get(
 
     return res.status(200).json({
       message: "Seats fetched successfully",
-      seats: availableSeats,
+      availableSeats: availableSeats,
+      seats: seats,
     });
   })
 );
+
 export default router;
