@@ -1,5 +1,4 @@
 import {
-  Box,
   Button,
   Container,
   Grid,
@@ -14,6 +13,7 @@ import { getMovie, getShowSeats } from "../services/api";
 import { useQuery } from "@tanstack/react-query";
 import { FormatDate } from "../utils/formatDate";
 import { useState } from "react";
+import { enqueueSnackbar } from "notistack";
 
 export default function Movie() {
   const { movieId } = useParams();
@@ -41,7 +41,7 @@ export default function Movie() {
 
 const MovieDetails = ({ movie }) => {
   return (
-    <Paper
+    <Container
       sx={{
         padding: 2,
         display: "flex",
@@ -54,7 +54,7 @@ const MovieDetails = ({ movie }) => {
       <Typography variant="body2">{FormatDate(movie.release_date)}</Typography>
       <Typography variant="body2">{movie.duration} minutes</Typography>
       <Typography variant="body">{movie.description}</Typography>
-    </Paper>
+    </Container>
   );
 };
 
@@ -88,9 +88,15 @@ const MovieShowtimes = ({ shows }) => {
   const handleSeatToggle = (seatId) => {
     if (bookedSeats.includes(seatId)) {
       setBookedSeats(bookedSeats.filter((seat) => seat !== seatId));
-    } else {
-      setBookedSeats([...bookedSeats, seatId]);
+      return;
     }
+    if (bookedSeats.length === 8) {
+      enqueueSnackbar("You can only book 8 seats at a time", {
+        variant: "error",
+      });
+      return;
+    }
+    setBookedSeats([...bookedSeats, seatId]);
   };
 
   const handleShowChange = (event, newValue) => {
@@ -103,13 +109,19 @@ const MovieShowtimes = ({ shows }) => {
   }
 
   return (
-    <div>
+    <Container>
       <Tabs value={selectedShow} onChange={handleShowChange} centered>
         {shows.map((show) => {
           return (
             <Tab
               key={show.show_id}
-              label={FormatDate(show.show_date)}
+              label={
+                FormatDate(show.show_date) +
+                " " +
+                show.show_time +
+                " " +
+                [show.hall_name]
+              }
               value={show}
             />
           );
@@ -124,7 +136,11 @@ const MovieShowtimes = ({ shows }) => {
           bookedSeats={bookedSeats}
         />
       )}
-    </div>
+
+      <Button variant="contained" fullWidth>
+        Book
+      </Button>
+    </Container>
   );
 };
 
@@ -140,7 +156,7 @@ const SeatFormation = ({ data, handleSeatToggle, bookedSeats }) => {
 
   // Grid of 10x10
   return (
-    <Grid container spacing={1} rowSpacing={2} mt={2} alignContent={"center"}>
+    <Grid container spacing={1} rowSpacing={2} my={2} alignContent={"center"}>
       {seats.map((seat) => {
         return (
           <Grid item xs={1} key={seat.seat_id}>

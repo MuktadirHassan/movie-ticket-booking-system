@@ -398,20 +398,21 @@ router.get(
 
 router.post(
   "/bookings/create",
+  auth,
   catchAsync(async (req, res) => {
     const schema = z
       .object({
         show_id: z.number(),
-        user_id: z.number(),
         booking_date: z.string(),
         amount_paid: z.number(),
         seat_ids: z.array(z.number()),
       })
       .required();
 
+    const user_id = req.user.user_id;
     const bookingData = schema.parse(req.body);
 
-    const { show_id, user_id, booking_date, amount_paid } = bookingData;
+    const { show_id, booking_date, amount_paid } = bookingData;
 
     const [newBooking, booked_seats] = await sql.begin(async (sql) => {
       const [newBooking] = await sql`
@@ -458,30 +459,25 @@ router.get(
   })
 );
 
-router.post(
-  "/seats/create",
+router.get(
+  "/my-bookings",
+  auth,
   catchAsync(async (req, res) => {
-    const schema = z
-      .object({
-        hall_id: z.number(),
-        seat_number: z.number(),
-      })
-      .required();
+    const { user_id } = req.user;
 
-    const seatData = schema.parse(req.body);
+    const bookings = await sql`
+    SELECT * FROM bookings
+    join shows on bookings.show_id = shows.show_id
+    join movies on shows.movie_id = movies.movie_id
+    join halls on shows.hall_id = halls.hall_id
+    join booked_seats on bookings.booking_id = booked_seats.booking_id
+    join seats on booked_seats.seat_id = seats.seat_id
+    WHERE user_id = ${user_id}
+    `;
 
-    const { hall_id, seat_number } = seatData;
-
-    const newSeat = await sql`
-    INSERT INTO seats (
-      hall_id, seat_number
-    ) VALUES (
-      ${hall_id}, ${seat_number}
-    ) RETURNING *`;
-
-    return res.status(201).json({
-      message: "Seat created successfully",
-      seat: newSeat[0],
+    return res.status(200).json({
+      message: "Bookings fetched successfully",
+      bookings,
     });
   })
 );

@@ -99,3 +99,8 @@ export const getShowSeats = async ({ showId, hallId }) => {
   const response = await api.get(url);
   return response.data;
 };
+
+export const getMyBookings = async () => {
+  const response = await api.get("/my-bookings");
+  return response.data;
+};

@@ -35,9 +35,17 @@ function BoxedAppBar() {
           </Button>
 
           {user && (
-            <Button color="inherit" onClick={logout}>
-              Logout
-            </Button>
+            <div>
+              <Button color="inherit" LinkComponent={Link} to="/">
+                Movies
+              </Button>
+              <Button color="inherit" LinkComponent={Link} to="/my-bookings">
+                My Bookings
+              </Button>
+              <Button color="inherit" onClick={logout}>
+                Logout
+              </Button>
+            </div>
           )}
           {!user && (
             <Button color="inherit" LinkComponent={Link} to="/login">
