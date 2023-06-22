@@ -1,19 +1,20 @@
 import {
+  Alert,
   Button,
   Container,
   Grid,
-  Paper,
   Skeleton,
   Tab,
   Tabs,
   Typography,
 } from "@mui/material";
 import { useParams } from "react-router-dom";
-import { getMovie, getShowSeats } from "../services/api";
+import { createBooking, getMovie, getShowSeats } from "../services/api";
 import { useQuery } from "@tanstack/react-query";
 import { FormatDate } from "../utils/formatDate";
 import { useState } from "react";
 import { enqueueSnackbar } from "notistack";
+import { useAuth } from "../auth/Auth";
 
 export default function Movie() {
   const { movieId } = useParams();
@@ -25,7 +26,11 @@ export default function Movie() {
     return <div>Something went wrong</div>;
   }
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <Container>
+        <Skeleton variant="rectangular" width="100%" height={500} />
+      </Container>
+    );
   }
   return (
     <Container
@@ -60,19 +65,14 @@ const MovieDetails = ({ movie }) => {
 
 const MovieShowtimes = ({ shows }) => {
   const [selectedShow, setSelectedShow] = useState(shows[0]);
+  const auth = useAuth();
   const [seats, setSeats] = useState({
-    seats: [
-      {
-        seat_number: 1,
-        seat_id: 65,
-        available: true,
-      },
-    ],
+    seats: [],
   });
   const [bookedSeats, setBookedSeats] = useState([]);
 
-  const { isLoading } = useQuery(
-    ["show", selectedShow.show_id],
+  const { isLoading, refetch } = useQuery(
+    ["show", selectedShow?.show_id],
     () =>
       getShowSeats({
         showId: selectedShow.show_id,
@@ -82,8 +82,13 @@ const MovieShowtimes = ({ shows }) => {
       onSuccess: (data) => {
         setSeats(data);
       },
+      enabled: !!selectedShow?.show_id && !!selectedShow?.hall_id,
     }
   );
+
+  if (!auth.user) {
+    return <Alert>Please login to book tickets</Alert>;
+  }
 
   const handleSeatToggle = (seatId) => {
     if (bookedSeats.includes(seatId)) {
@@ -104,23 +109,58 @@ const MovieShowtimes = ({ shows }) => {
     setSelectedShow(newValue);
   };
 
-  if (!shows) {
+  const handleBooking = async () => {
+    const show_id = selectedShow.show_id;
+    const amount_paid = selectedShow.amount * bookedSeats.length;
+
+    if (bookedSeats.length === 0) {
+      enqueueSnackbar("Please select seats", {
+        variant: "error",
+      });
+      return;
+    }
+
+    try {
+      await createBooking({
+        show_id,
+        amount_paid,
+        seat_ids: bookedSeats,
+      });
+
+      refetch();
+      setBookedSeats([]);
+      enqueueSnackbar("Booking successful", {
+        variant: "success",
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  if (shows?.length === 0) {
     return <div>No showtimes available</div>;
   }
-
   return (
     <Container>
-      <Tabs value={selectedShow} onChange={handleShowChange} centered>
+      <Tabs
+        value={selectedShow}
+        onChange={handleShowChange}
+        centered
+        visibleScrollbar
+      >
         {shows.map((show) => {
           return (
             <Tab
               key={show.show_id}
               label={
                 FormatDate(show.show_date) +
-                " " +
+                " at " +
                 show.show_time +
-                " " +
-                [show.hall_name]
+                " in Hall: " +
+                [show.hall_name] +
+                " - Price: " +
+                show.amount +
+                " BDT"
               }
               value={show}
             />
@@ -137,7 +177,7 @@ const MovieShowtimes = ({ shows }) => {
         />
       )}
 
-      <Button variant="contained" fullWidth>
+      <Button variant="contained" fullWidth onClick={handleBooking}>
         Book
       </Button>
     </Container>

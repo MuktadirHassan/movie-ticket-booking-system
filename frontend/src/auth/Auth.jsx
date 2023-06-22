@@ -64,13 +64,15 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-function PrivateRoute({ children }) {
+function PrivateRoute({ children, adminOnly }) {
   let auth = useAuth();
   const localUser = getLocalStorage();
 
   // localuser is null and auth is loading
   if (!localUser && !auth.loading) {
     return <Navigate to="/login" replace />;
+  } else if (adminOnly && auth.user && auth.user.user.role !== "ADMIN") {
+    return <Navigate to="/" replace />;
   }
 
   return children;

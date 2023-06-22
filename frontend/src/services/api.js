@@ -3,7 +3,7 @@ import { enqueueSnackbar } from "notistack";
 
 const api = axios.create({
   baseURL: "http://localhost:5000/api",
-  timeout: 4000,
+  timeout: 10000,
   withCredentials: true,
 });
 
@@ -39,6 +39,16 @@ export const getUser = async () => {
   return response.data;
 };
 
+export const getUsers = async () => {
+  const response = await api.get("/users");
+  return response.data;
+};
+
+export const updateUser = async (id, user) => {
+  const response = await api.patch(`/users/${id}`, user);
+  return response.data;
+};
+
 export const getMovies = async () => {
   const response = await api.get("/movies");
   return response.data;
@@ -50,7 +60,7 @@ export const getMovie = async (id) => {
 };
 
 export const createMovie = async (movie) => {
-  const response = await api.post("/movies", movie);
+  const response = await api.post("/movies/create", movie);
   return response.data;
 };
 
@@ -102,5 +112,10 @@ export const getShowSeats = async ({ showId, hallId }) => {
 
 export const getMyBookings = async () => {
   const response = await api.get("/my-bookings");
+  return response.data;
+};
+
+export const createBooking = async (booking) => {
+  const response = await api.post("/bookings/create", booking);
   return response.data;
 };

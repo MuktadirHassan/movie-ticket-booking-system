@@ -40,7 +40,7 @@ router.post("/seats/create/:hallId", async (req, res) => {
   });
 });
 
-router.get("/", auth, (req, res) => {
+router.get("/", (req, res) => {
   res.json({
     message: "API is working",
   });
@@ -113,6 +113,7 @@ router.post(
     const user = {
       user_id: newUser[0].user_id,
       username: newUser[0].username,
+      role: newUser[0].role,
       email: newUser[0].email,
     };
 
@@ -164,6 +165,7 @@ router.post(
     const user = {
       user_id: findUser[0].user_id,
       username: findUser[0].username,
+      role: findUser[0].role,
       email: findUser[0].email,
     };
 
@@ -310,11 +312,11 @@ router.post(
     const { hall_name } = hallData;
 
     const newHall = await sql`
-    INSERT INTO halls (
-      hall_name
-    ) VALUES (
-      ${hall_name}
-    ) RETURNING *`;
+          INSERT INTO halls (
+            hall_name
+          ) VALUES (
+            ${hall_name}
+          ) RETURNING *`;
 
     return res.status(201).json({
       message: "Hall created successfully",
@@ -362,18 +364,19 @@ router.post(
         hall_id: z.number(),
         show_time: z.string(),
         show_date: z.string(),
+        amount: z.number(),
       })
       .required();
 
     const showData = schema.parse(req.body);
 
-    const { movie_id, hall_id, show_time, show_date } = showData;
+    const { movie_id, hall_id, show_time, show_date, amount } = showData;
 
     const newShow = await sql`
     INSERT INTO shows (
-      movie_id, hall_id, show_time, show_date
+      movie_id, hall_id, show_time, show_date, amount
     ) VALUES (
-      ${movie_id}, ${hall_id}, ${show_time}, ${show_date} 
+      ${movie_id}, ${hall_id}, ${show_time}, ${show_date}, ${amount}
     ) RETURNING *`;
 
     return res.status(201).json({
@@ -398,12 +401,11 @@ router.get(
 
 router.post(
   "/bookings/create",
-  auth,
+  auth(),
   catchAsync(async (req, res) => {
     const schema = z
       .object({
         show_id: z.number(),
-        booking_date: z.string(),
         amount_paid: z.number(),
         seat_ids: z.array(z.number()),
       })
@@ -411,24 +413,24 @@ router.post(
 
     const user_id = req.user.user_id;
     const bookingData = schema.parse(req.body);
-
-    const { show_id, booking_date, amount_paid } = bookingData;
+    const todaysDate = new Date().toISOString().split("T")[0];
+    const { show_id, amount_paid, seat_ids } = bookingData;
 
     const [newBooking, booked_seats] = await sql.begin(async (sql) => {
       const [newBooking] = await sql`
       INSERT INTO bookings (
         show_id, user_id, booking_date, amount_paid
       ) VALUES (
-        ${show_id}, ${user_id}, ${booking_date}, ${amount_paid}
+        ${show_id}, ${user_id}, ${todaysDate}, ${amount_paid}
       ) RETURNING *`;
 
       const [booked_seats] = await Promise.all(
-        bookingData.seat_ids.map(async (seat_id) => {
+        seat_ids.map(async (seat_id) => {
           const newBookedSeat = await sql`
         INSERT INTO booked_seats (
           booking_id, seat_id
         ) VALUES (
-          ${newBooking[0].booking_id}, ${seat_id}
+          ${newBooking.booking_id}, ${seat_id}
         ) RETURNING *`;
 
           return newBookedSeat[0];
@@ -461,7 +463,7 @@ router.get(
 
 router.get(
   "/my-bookings",
-  auth,
+  auth(),
   catchAsync(async (req, res) => {
     const { user_id } = req.user;
 
@@ -522,6 +524,49 @@ router.get(
     return res.status(200).json({
       message: "Seats fetched successfully",
       seats: seatsWithAvailability,
+    });
+  })
+);
+
+router.get(
+  "/users",
+  auth(),
+  catchAsync(async (req, res) => {
+    const users = await sql`
+  SELECT user_id, username, email, phone_number, role FROM users
+  ORDER BY user_id ASC
+  `;
+
+    return res.status(200).json({
+      message: "Users fetched successfully",
+      users,
+    });
+  })
+);
+
+router.patch(
+  "/users/:userId",
+  auth(),
+  catchAsync(async (req, res) => {
+    const { userId } = req.params;
+
+    const schema = z
+      .object({
+        role: z.string(),
+      })
+      .partial();
+
+    const userData = schema.parse(req.body);
+
+    const updatedUser = await sql`
+    UPDATE users
+    SET ${sql(userData)}
+    WHERE user_id = ${userId}
+    RETURNING *`;
+
+    return res.status(200).json({
+      message: "User updated successfully",
+      user: updatedUser[0],
     });
   })
 );
