@@ -49,8 +49,13 @@ export const updateUser = async (id, user) => {
   return response.data;
 };
 
-export const getMovies = async () => {
-  const response = await api.get("/movies");
+export const getMovies = async (searchQuery, filterType) => {
+  const response = await api.get("/movies", {
+    params: {
+      query: searchQuery,
+      filter: filterType,
+    },
+  });
   return response.data;
 };
 

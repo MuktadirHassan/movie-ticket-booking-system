@@ -210,6 +210,36 @@ router.post(
 router.get(
   "/movies",
   catchAsync(async (req, res) => {
+    const { query, filter } = req.query;
+
+    if (query && filter === "movie_name") {
+      const movies = await sql`
+      SELECT * FROM movies WHERE movie_name LIKE ${"%" + query + "%"}`;
+      return res.status(200).json({
+        message: "Movies fetched successfully",
+        movies,
+      });
+    }
+
+    if (query && filter === "release_year") {
+      // Compare only year
+      const movies = await sql`
+      SELECT * FROM movies WHERE DATE_PART('year', release_date) = ${query}`;
+      return res.status(200).json({
+        message: "Movies fetched successfully",
+        movies,
+      });
+    }
+
+    if (query && filter === "duration") {
+      const movies = await sql`
+      SELECT * FROM movies WHERE duration = ${query}`;
+      return res.status(200).json({
+        message: "Movies fetched successfully",
+        movies,
+      });
+    }
+
     const movies = await sql`
     SELECT * FROM movies`;
 
